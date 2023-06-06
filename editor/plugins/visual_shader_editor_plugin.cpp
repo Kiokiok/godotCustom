@@ -37,6 +37,7 @@
 #include "core/os/keyboard.h"
 #include "editor/editor_node.h"
 #include "editor/editor_properties.h"
+#include "editor/editor_properties_vector.h"
 #include "editor/editor_scale.h"
 #include "editor/editor_settings.h"
 #include "editor/editor_undo_redo_manager.h"
@@ -6620,7 +6621,7 @@ void EditorPropertyVisualShaderMode::_option_selected(int p_which) {
 }
 
 void EditorPropertyVisualShaderMode::update_property() {
-	int which = get_edited_object()->get(get_edited_property());
+	int which = get_edited_property_value();
 	options->select(which);
 }
 

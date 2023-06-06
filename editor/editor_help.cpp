@@ -65,7 +65,7 @@ protected:
 		ClassDB::bind_method(D_METHOD("get_classes"), &DocCache::get_classes);
 
 		ADD_PROPERTY(PropertyInfo(Variant::STRING, "version_hash"), "set_version_hash", "get_version_hash");
-		ADD_PROPERTY(PropertyInfo(Variant::DICTIONARY, "classes"), "set_classes", "get_classes");
+		ADD_PROPERTY(PropertyInfo(Variant::ARRAY, "classes"), "set_classes", "get_classes");
 	}
 
 public:
@@ -2258,7 +2258,7 @@ String EditorHelp::get_cache_full_path() {
 static bool first_attempt = true;
 
 static String _compute_doc_version_hash() {
-	return uitos(ClassDB::get_api_hash(ClassDB::API_CORE)) + "-" + uitos(ClassDB::get_api_hash(ClassDB::API_EDITOR));
+	return vformat("%d/%d/%s", ClassDB::get_api_hash(ClassDB::API_CORE), ClassDB::get_api_hash(ClassDB::API_EDITOR), _doc_data_hash);
 }
 
 void EditorHelp::_load_doc_thread(void *p_udata) {
