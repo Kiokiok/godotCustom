@@ -1791,6 +1791,10 @@ void ScriptEditor::ensure_select_current() {
 	_update_selected_editor_menu();
 }
 
+bool ScriptEditor::is_editor_floating() {
+	return is_floating;
+}
+
 void ScriptEditor::_find_scripts(Node *p_base, Node *p_current, HashSet<Ref<Script>> &used) {
 	if (p_current != p_base && p_current->get_owner() != p_base) {
 		return;
@@ -2332,7 +2336,7 @@ bool ScriptEditor::edit(const Ref<Resource> &p_resource, int p_line, int p_col, 
 				}
 
 				if (p_line > 0) {
-					se->goto_line(p_line - 1);
+					se->goto_line(p_line);
 				}
 			}
 			_update_script_names();
@@ -2427,8 +2431,8 @@ bool ScriptEditor::edit(const Ref<Resource> &p_resource, int p_line, int p_col, 
 	_test_script_times_on_disk(p_resource);
 	_update_modified_scripts_for_external_editor(p_resource);
 
-	if (p_line > 0) {
-		se->goto_line(p_line - 1);
+	if (p_line >= 0) {
+		se->goto_line(p_line);
 	}
 
 	notify_script_changed(p_resource);
@@ -3747,6 +3751,7 @@ void ScriptEditor::_on_find_in_files_modified_files(PackedStringArray paths) {
 
 void ScriptEditor::_window_changed(bool p_visible) {
 	make_floating->set_visible(!p_visible);
+	is_floating = p_visible;
 }
 
 void ScriptEditor::_filter_scripts_text_changed(const String &p_newtext) {

@@ -1750,7 +1750,7 @@ Vector<uint8_t> String::hex_decode() const {
 
 void String::print_unicode_error(const String &p_message, bool p_critical) const {
 	if (p_critical) {
-		print_error(vformat("Unicode parsing error, some characters were replaced with � (U+FFFD): %s", p_message));
+		print_error(vformat(U"Unicode parsing error, some characters were replaced with � (U+FFFD): %s", p_message));
 	} else {
 		print_error(vformat("Unicode parsing error: %s", p_message));
 	}
@@ -3632,6 +3632,23 @@ String String::repeat(int p_count) const {
 		stride = MIN(stride * 2, p_count - offset);
 	}
 	dst[p_count * len] = _null;
+	return new_string;
+}
+
+String String::reverse() const {
+	int len = length();
+	if (len <= 1) {
+		return *this;
+	}
+	String new_string;
+	new_string.resize(len + 1);
+
+	const char32_t *src = ptr();
+	char32_t *dst = new_string.ptrw();
+	for (int i = 0; i < len; i++) {
+		dst[i] = src[len - i - 1];
+	}
+	dst[len] = _null;
 	return new_string;
 }
 

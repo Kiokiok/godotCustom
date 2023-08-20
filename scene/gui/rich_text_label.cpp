@@ -1106,6 +1106,10 @@ int RichTextLabel::_draw_line(ItemFrame *p_frame, int p_line, const Vector2 &p_o
 				}
 			}
 
+			if (is_inside_tree() && get_viewport()->is_snap_2d_transforms_to_pixel_enabled()) {
+				fx_offset = fx_offset.round();
+			}
+
 			// Draw glyph outlines.
 			const Color modulated_outline_color = font_outline_color * Color(1, 1, 1, font_color.a);
 			const Color modulated_shadow_color = font_shadow_color * Color(1, 1, 1, font_color.a);
@@ -1327,6 +1331,10 @@ int RichTextLabel::_draw_line(ItemFrame *p_frame, int p_line, const Vector2 &p_o
 					const float sined_time = (Math::ease(Math::pingpong(item_pulse->elapsed_time, 1.0 / item_pulse->frequency) * item_pulse->frequency, item_pulse->ease));
 					font_color = font_color.lerp(font_color * item_pulse->color, sined_time);
 				}
+			}
+
+			if (is_inside_tree() && get_viewport()->is_snap_2d_transforms_to_pixel_enabled()) {
+				fx_offset = fx_offset.round();
 			}
 
 			if (selected && use_selected_font_color) {
@@ -1577,6 +1585,7 @@ float RichTextLabel::_find_click_in_line(ItemFrame *p_frame, int p_line, const V
 					}
 				} else {
 					char_pos = TS->shaped_text_hit_test_position(rid, p_click.x - rect.position.x);
+					char_pos = TS->shaped_text_closest_character_pos(rid, char_pos);
 				}
 			}
 			line_clicked = true;
@@ -1954,7 +1963,7 @@ void RichTextLabel::gui_input(const Ref<InputEvent> &p_event) {
 
 						// Erase previous selection.
 						if (selection.active) {
-							if (_is_click_inside_selection()) {
+							if (drag_and_drop_selection_enabled && _is_click_inside_selection()) {
 								selection.drag_attempt = true;
 								selection.click_item = nullptr;
 							} else {
@@ -2737,6 +2746,9 @@ void RichTextLabel::_thread_function(void *p_userdata) {
 
 void RichTextLabel::_thread_end() {
 	set_physics_process_internal(false);
+	if (!scroll_visible) {
+		vscroll->hide();
+	}
 	if (is_visible_in_tree()) {
 		queue_redraw();
 	}
@@ -2806,7 +2818,6 @@ _FORCE_INLINE_ float RichTextLabel::_update_scroll_exceeds(float p_total_height,
 		} else {
 			scroll_visible = false;
 			scroll_w = 0;
-			vscroll->hide();
 		}
 
 		main->first_resized_line.store(0);
@@ -2854,6 +2865,9 @@ bool RichTextLabel::_validate_line_caches() {
 		if (main->first_resized_line.load() == (int)main->lines.size()) {
 			vscroll->set_value(old_scroll);
 			validating.store(false);
+			if (!scroll_visible) {
+				vscroll->hide();
+			}
 			return true;
 		}
 
@@ -2873,6 +2887,9 @@ bool RichTextLabel::_validate_line_caches() {
 			update_minimum_size();
 		}
 		validating.store(false);
+		if (!scroll_visible) {
+			vscroll->hide();
+		}
 		return true;
 	}
 	validating.store(false);
@@ -2888,6 +2905,9 @@ bool RichTextLabel::_validate_line_caches() {
 		updating.store(true);
 		_process_line_caches();
 		updating.store(false);
+		if (!scroll_visible) {
+			vscroll->hide();
+		}
 		queue_redraw();
 		return true;
 	}
@@ -5317,6 +5337,14 @@ bool RichTextLabel::is_deselect_on_focus_loss_enabled() const {
 	return deselect_on_focus_loss_enabled;
 }
 
+void RichTextLabel::set_drag_and_drop_selection_enabled(const bool p_enabled) {
+	drag_and_drop_selection_enabled = p_enabled;
+}
+
+bool RichTextLabel::is_drag_and_drop_selection_enabled() const {
+	return drag_and_drop_selection_enabled;
+}
+
 int RichTextLabel::get_selection_from() const {
 	if (!selection.active || !selection.enabled) {
 		return -1;
@@ -5647,6 +5675,9 @@ void RichTextLabel::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("set_deselect_on_focus_loss_enabled", "enable"), &RichTextLabel::set_deselect_on_focus_loss_enabled);
 	ClassDB::bind_method(D_METHOD("is_deselect_on_focus_loss_enabled"), &RichTextLabel::is_deselect_on_focus_loss_enabled);
 
+	ClassDB::bind_method(D_METHOD("set_drag_and_drop_selection_enabled", "enable"), &RichTextLabel::set_drag_and_drop_selection_enabled);
+	ClassDB::bind_method(D_METHOD("is_drag_and_drop_selection_enabled"), &RichTextLabel::is_drag_and_drop_selection_enabled);
+
 	ClassDB::bind_method(D_METHOD("get_selection_from"), &RichTextLabel::get_selection_from);
 	ClassDB::bind_method(D_METHOD("get_selection_to"), &RichTextLabel::get_selection_to);
 
@@ -5736,6 +5767,7 @@ void RichTextLabel::_bind_methods() {
 	ADD_GROUP("Text Selection", "");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "selection_enabled"), "set_selection_enabled", "is_selection_enabled");
 	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "deselect_on_focus_loss_enabled"), "set_deselect_on_focus_loss_enabled", "is_deselect_on_focus_loss_enabled");
+	ADD_PROPERTY(PropertyInfo(Variant::BOOL, "drag_and_drop_selection_enabled"), "set_drag_and_drop_selection_enabled", "is_drag_and_drop_selection_enabled");
 
 	ADD_GROUP("Displayed Text", "");
 	// Note: "visible_characters" and "visible_ratio" should be set after "text" to be correctly applied.

@@ -3563,7 +3563,7 @@ void TextServerFallback::_shaped_text_overrun_trim_to_width(const RID &p_shaped_
 
 	if ((trim_pos >= 0 && sd->width > p_width) || enforce_ellipsis) {
 		if (add_ellipsis && (ellipsis_pos > 0 || enforce_ellipsis)) {
-			// Insert an additional space when cutting word bound for aesthetics.
+			// Insert an additional space when cutting word bound for esthetics.
 			if (cut_per_word && (ellipsis_pos > 0)) {
 				Glyph gl;
 				gl.count = 1;
@@ -4077,6 +4077,26 @@ double TextServerFallback::_shaped_text_get_underline_thickness(const RID &p_sha
 	}
 
 	return sd->uthk;
+}
+
+PackedInt32Array TextServerFallback::_shaped_text_get_character_breaks(const RID &p_shaped) const {
+	const ShapedTextDataFallback *sd = shaped_owner.get_or_null(p_shaped);
+	ERR_FAIL_COND_V(!sd, PackedInt32Array());
+
+	MutexLock lock(sd->mutex);
+	if (!sd->valid) {
+		const_cast<TextServerFallback *>(this)->_shaped_text_shape(p_shaped);
+	}
+
+	PackedInt32Array ret;
+	int size = sd->end - sd->start;
+	if (size > 0) {
+		ret.resize(size);
+		for (int i = 0; i < size; i++) {
+			ret.write[i] = i + 1 + sd->start;
+		}
+	}
+	return ret;
 }
 
 String TextServerFallback::_string_to_upper(const String &p_string, const String &p_language) const {
